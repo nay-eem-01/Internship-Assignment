@@ -2,6 +2,7 @@ package com.project.springbootbasicwithpostgresql.Controller;
 
 import com.project.springbootbasicwithpostgresql.Model.Users;
 import com.project.springbootbasicwithpostgresql.Service.CustomUserDetailService;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +38,7 @@ public class AppController {
 
     @PostMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public String createUser(@RequestBody Users user){
+    public String createUser(@Valid @RequestBody Users user){
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         Users newUser = customUserDetailService.SaveUserToDB(user);
         return "User created successfully";
