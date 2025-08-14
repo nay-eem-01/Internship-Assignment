@@ -118,10 +118,13 @@ properties
 
 
 
-`spring.datasource.url=jdbc:postgresql://localhost:5432/intern_db
- spring.datasource.username=postgres
- spring.datasource.password= use your password here 
- spring.jpa.hibernate.ddl-auto=update`
+`spring.datasource.url=jdbc:postgresql://localhost:5432/intern_db`    
+
+`spring.datasource.username=postgres`
+
+`spring.datasource.password= use your password here` 
+
+`spring.jpa.hibernate.ddl-auto=update`
 
 1.  Build the project:
 
