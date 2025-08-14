@@ -3,8 +3,6 @@ package com.project.springbootbasicwithpostgresql.Controller;
 import com.project.springbootbasicwithpostgresql.Model.Users;
 import com.project.springbootbasicwithpostgresql.Service.CustomUserDetailService;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
