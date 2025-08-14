@@ -105,7 +105,8 @@ bash
 
 
 `git clone <https://github.com/nay-eem-01/Internship-Assignment.git>
-cd springbootbasicwithpostgresql`
+
+    cd springbootbasicwithpostgresql` 
 
 1.  Configure PostgreSQL database:
 
@@ -118,9 +119,9 @@ properties
 
 
 `spring.datasource.url=jdbc:postgresql://localhost:5432/intern_db
-spring.datasource.username=postgres
-spring.datasource.password= use your password here 
-spring.jpa.hibernate.ddl-auto=update`
+ spring.datasource.username=postgres
+ spring.datasource.password= use your password here 
+ spring.jpa.hibernate.ddl-auto=update`
 
 1.  Build the project:
 
