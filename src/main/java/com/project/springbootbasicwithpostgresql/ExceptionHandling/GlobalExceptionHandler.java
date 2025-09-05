@@ -113,7 +113,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-
     private ResponseEntity<Map<String, Object>> buildErrorResponse(String message, HttpStatus status, String path) {
         return buildErrorResponse(message, status, path, null);
     }

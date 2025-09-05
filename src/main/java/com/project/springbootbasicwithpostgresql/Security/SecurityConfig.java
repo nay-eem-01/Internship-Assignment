@@ -13,6 +13,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,8 +30,8 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setUserDetailsService(customUserDetailService);
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(customUserDetailService);
+//        authenticationProvider.setUserDetailsService(customUserDetailService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
 
         return authenticationProvider;
@@ -50,15 +51,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/public").permitAll()
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/public").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/user").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/admin").hasRole("ADMIN")
-                .anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults());;
-
-
-        http.authenticationProvider(authenticationProvider());
+                        .anyRequest().authenticated())
+                .httpBasic(Customizer.withDefaults());
+                 http.authenticationProvider(authenticationProvider());
 
         return http.build();
     }
