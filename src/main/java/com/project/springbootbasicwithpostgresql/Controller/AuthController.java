@@ -3,9 +3,10 @@ package com.project.springbootbasicwithpostgresql.Controller;
 import com.project.springbootbasicwithpostgresql.DTO.LogInRequest;
 import com.project.springbootbasicwithpostgresql.DTO.LogInResponse;
 import com.project.springbootbasicwithpostgresql.DTO.UserDto;
-import com.project.springbootbasicwithpostgresql.Service.CustomUserDetailService;
 import com.project.springbootbasicwithpostgresql.Service.CustomUserDetails;
 import com.project.springbootbasicwithpostgresql.Service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,10 +14,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -33,7 +36,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> LogIn(@RequestBody LogInRequest logInRequest) {
+    public ResponseEntity<?> LogIn(@RequestBody LogInRequest logInRequest, HttpServletRequest request) {
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate
@@ -44,9 +47,13 @@ public class AuthController {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
+        HttpSession session = request.getSession(true);
+        session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+
+
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        List<String> roles = userDetails.getAuthorities().stream().map(role -> role.getAuthority()).toList();
+        List<String> roles = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
         LogInResponse response = new LogInResponse(userDetails.getUsername(), roles);
 
         return new ResponseEntity<>(response, HttpStatus.OK);
@@ -58,6 +65,15 @@ public class AuthController {
         return new ResponseEntity<>(savedUser,HttpStatus.CREATED);
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request){
+        HttpSession session = request.getSession(false);
 
+        if (session != null){
+            session.invalidate();
+        }
+        SecurityContextHolder.clearContext();
+        return ResponseEntity.ok(Map.of("Message","Logged out successfully"));
+    }
 
 }
