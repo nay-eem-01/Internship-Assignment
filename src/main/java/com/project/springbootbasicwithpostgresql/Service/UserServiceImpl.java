@@ -39,6 +39,8 @@ public class UserServiceImpl implements UserService{
 
         newUser.setPassword(passwordEncoder.encode(newUser.getPassword()));
 
-        return modelMapper.map(userRepository.save(newUser),UserDto.class);
+        UserDto savedUser = modelMapper.map(userRepository.save(newUser),UserDto.class);
+
+        return modelMapper.map(savedUser,UserDto.class);
     }
 }

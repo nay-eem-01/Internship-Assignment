@@ -3,6 +3,7 @@ package com.project.springbootbasicwithpostgresql.Security;
 import com.project.springbootbasicwithpostgresql.Model.AppRole;
 import com.project.springbootbasicwithpostgresql.Model.Users;
 import com.project.springbootbasicwithpostgresql.Repository.UserRepository;
+import com.project.springbootbasicwithpostgresql.Security.JWT.JwtAuthenticationFilter;
 import com.project.springbootbasicwithpostgresql.Service.CustomUserDetailService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -21,15 +22,18 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
     private final CustomUserDetailService customUserDetailService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(CustomUserDetailService customUserDetailService) {
+    public SecurityConfig(CustomUserDetailService customUserDetailService, JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.customUserDetailService = customUserDetailService;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
@@ -67,7 +71,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(false)
                         .sessionRegistry(sessionRegistry()))
@@ -79,10 +83,8 @@ public class SecurityConfig {
                             response.getWriter().write("{\"error\":\"Authentication required\"}");
                         }));
 
-//                .httpBasic(Customizer.withDefaults());
-////                .formLogin(Customizer.withDefaults());
-
         http.authenticationProvider(authenticationProvider());
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

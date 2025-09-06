@@ -3,6 +3,7 @@ package com.project.springbootbasicwithpostgresql.Controller;
 import com.project.springbootbasicwithpostgresql.DTO.LogInRequest;
 import com.project.springbootbasicwithpostgresql.DTO.LogInResponse;
 import com.project.springbootbasicwithpostgresql.DTO.UserDto;
+import com.project.springbootbasicwithpostgresql.Security.JWT.JwtUtil;
 import com.project.springbootbasicwithpostgresql.Service.CustomUserDetails;
 import com.project.springbootbasicwithpostgresql.Service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,12 +28,14 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
 
-    public AuthController(AuthenticationManager authenticationManager, UserService userService) {
+    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtUtil jwtUtil) {
         this.authenticationManager = authenticationManager;
 
         this.userService = userService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/login")
@@ -45,16 +48,12 @@ public class AuthController {
             throw new BadCredentialsException("Invalid username or password", e);
         }
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        HttpSession session = request.getSession(true);
-        session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String jwt = jwtUtil.generateToken(userDetails.getUsername());
 
         List<String> roles = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
-        LogInResponse response = new LogInResponse(userDetails.getUsername(), roles);
+        LogInResponse response = new LogInResponse(userDetails.getUsername(), roles,jwt);
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -67,11 +66,6 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request){
-        HttpSession session = request.getSession(false);
-
-        if (session != null){
-            session.invalidate();
-        }
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok(Map.of("Message","Logged out successfully"));
     }
