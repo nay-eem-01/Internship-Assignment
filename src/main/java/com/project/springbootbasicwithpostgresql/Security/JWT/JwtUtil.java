@@ -18,8 +18,11 @@ public class JwtUtil {
     @Value("${jwt.secret:TaK+HaV^uvCHEFsEVfypW#7g9^k*Z8$V}")
     private String secretKey;
 
-    @Value("${jwt.expiration:3600000}") // 1 hour default
+    @Value("${jwt.expiration:120000}") // 1 hour default
     private Long jwtExpiration;
+
+    @Value("${jwt.refresh.expiration:604800000}") // 7 days
+    private Long refreshTokenExpiration;
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
@@ -28,6 +31,10 @@ public class JwtUtil {
     public String extractUsername(String token) {
         Claims claims = extractAllClaims(token);
         return claims.getSubject();
+    }
+    public String extractTokenType(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("type",String.class);
     }
 
     private Claims extractAllClaims(String token) {
@@ -42,24 +49,49 @@ public class JwtUtil {
         }
     }
 
-    public String generateToken(String username) {
-        return generateToken(new HashMap<>(), username);
+    public String generateAccessToken(String username) {
+        Map<String,Object> claims = new HashMap<>();
+        claims.put("type","access");
+        System.out.println("This is first - access token");
+        return generateToken(claims, username,jwtExpiration);
     }
 
-    public String generateToken(Map<String, Object> extractClaims, String username) {
+    public String generateRefreshToken(String username) {
+        Map<String,Object> claims = new HashMap<>();
+        claims.put("type","refresh");
+        System.out.println("This is 2nd - refresh token");
+        return generateToken(claims, username,refreshTokenExpiration);
+    }
+
+    public String generateToken(Map<String, Object> extractClaims, String username,Long expiration) {
         return Jwts.builder()
                 .claims(extractClaims)
                 .subject(username)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
-    public boolean isTokenValid(String token, CustomUserDetails userDetails) {
+    public boolean isAccessTokenValid(String token, CustomUserDetails userDetails) {
         try {
             final String username = extractUsername(token);
-            return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+            final String tokenType = extractTokenType(token);
+            return (username.equals(userDetails.getUsername())
+                    && !isTokenExpired(token)
+                    && "access".equals(tokenType));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isRefreshTokenValid(String token, CustomUserDetails userDetails) {
+        try {
+            final String username = extractUsername(token);
+            final String tokenType = extractTokenType(token);
+            return (username.equals(userDetails.getUsername())
+                    && !isTokenExpired(token)
+                    && "refresh".equals(tokenType));
         } catch (Exception e) {
             return false;
         }
@@ -72,4 +104,10 @@ public class JwtUtil {
     private Date extractExpiration(String token) {
         return extractAllClaims(token).getExpiration();
     }
+
+    public Long getTokenExpirationTime(String token) {
+        return extractExpiration(token).getTime();
+    }
+
+
 }

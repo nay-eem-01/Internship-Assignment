@@ -1,13 +1,11 @@
 package com.project.springbootbasicwithpostgresql.Controller;
 
-import com.project.springbootbasicwithpostgresql.DTO.LogInRequest;
-import com.project.springbootbasicwithpostgresql.DTO.LogInResponse;
-import com.project.springbootbasicwithpostgresql.DTO.UserDto;
+import com.project.springbootbasicwithpostgresql.DTO.*;
 import com.project.springbootbasicwithpostgresql.Security.JWT.JwtUtil;
+import com.project.springbootbasicwithpostgresql.Service.CustomUserDetailService;
 import com.project.springbootbasicwithpostgresql.Service.CustomUserDetails;
 import com.project.springbootbasicwithpostgresql.Service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,13 +27,15 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final CustomUserDetailService customUserDetailService;
 
 
-    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtUtil jwtUtil) {
+    public AuthController(AuthenticationManager authenticationManager, UserService userService, JwtUtil jwtUtil, CustomUserDetailService customUserDetailService) {
         this.authenticationManager = authenticationManager;
 
         this.userService = userService;
         this.jwtUtil = jwtUtil;
+        this.customUserDetailService = customUserDetailService;
     }
 
     @PostMapping("/login")
@@ -50,10 +50,13 @@ public class AuthController {
 
 
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String jwt = jwtUtil.generateToken(userDetails.getUsername());
+
+        String accessToken = jwtUtil.generateAccessToken(userDetails.getUsername());
+        String refreshToken = jwtUtil.generateRefreshToken(userDetails.getUsername());
+        Long accessTokenExpiresAt = jwtUtil.getTokenExpirationTime(accessToken);
 
         List<String> roles = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
-        LogInResponse response = new LogInResponse(userDetails.getUsername(), roles,jwt);
+        LogInResponse response = new LogInResponse(userDetails.getUsername(), roles,accessToken,refreshToken,accessTokenExpiresAt);
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -68,6 +71,30 @@ public class AuthController {
     public ResponseEntity<?> logout(HttpServletRequest request){
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok(Map.of("Message","Logged out successfully"));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?>  getRefreshToken(@RequestBody RefreshTokenRequestDto refreshTokenRequestDto){
+        try{
+            String refreshToken = refreshTokenRequestDto.getRefreshToken();
+            String username = jwtUtil.extractUsername(refreshToken);
+
+            CustomUserDetails userDetails = (CustomUserDetails) customUserDetailService.loadUserByUsername(username);
+            if (!jwtUtil.isRefreshTokenValid(refreshToken,userDetails)){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","Invalid refresh token"));
+            }
+
+            String newAccessToken = jwtUtil.generateAccessToken(username);
+            Long accessTokenExpiresAt = jwtUtil.getTokenExpirationTime(newAccessToken);
+
+            RefreshTokenResponseDto responseDto = new RefreshTokenResponseDto(newAccessToken,accessTokenExpiresAt,refreshToken);
+
+            return ResponseEntity.ok(responseDto);
+
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error","Invalid refresh token"));
+        }
+
     }
 
 }

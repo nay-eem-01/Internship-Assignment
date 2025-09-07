@@ -1,19 +1,15 @@
 package com.project.springbootbasicwithpostgresql.DTO;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LogInResponse {
+public class RefreshTokenRequestDto {
 
-    private String username;
-    private List<String> roles;
-    private String accessToken;
+    @NotBlank(message = "Refresh token can not be empty")
     private String refreshToken;
-    private Long accessTokenExpiresAt;
 }
